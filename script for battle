@@ -1,0 +1,233 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+
+-- --- INTERFACE ADAPTÃ‰E MOBILE ---
+local sg = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+sg.Name = "C00LKID_V6_MOBILE_CLEAN"
+sg.ResetOnSpawn = false
+
+local openBtn = Instance.new("TextButton", sg)
+openBtn.Size = UDim2.new(0, 80, 0, 35)
+openBtn.Position = UDim2.new(0, 10, 0, 10)
+openBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+openBtn.Text = "C00LKID"
+openBtn.TextColor3 = Color3.new(1, 1, 1)
+openBtn.Font = Enum.Font.SourceSansBold
+openBtn.TextSize = 14
+
+local MainFrame = Instance.new("Frame", sg)
+MainFrame.Size = UDim2.new(0, 200, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -100, 0.2, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BorderSizePixel = 2
+MainFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
+MainFrame.Visible = false
+
+local TPFrame = Instance.new("Frame", sg)
+TPFrame.Size = UDim2.new(0, 180, 0, 250)
+TPFrame.Position = UDim2.new(0.5, 110, 0.2, 0)
+TPFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TPFrame.BorderSizePixel = 2
+TPFrame.BorderColor3 = Color3.fromRGB(255, 0, 0)
+TPFrame.Visible = false
+
+-- --- SYSTÃˆME DE DRAG ---
+local dragging, dragStart, startPos
+local dragBar = Instance.new("Frame", MainFrame)
+dragBar.Size = UDim2.new(1, 0, 0, 40)
+dragBar.Position = UDim2.new(0, 0, 0, -40)
+dragBar.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+
+dragBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- --- CONTENU ---
+local scroll = Instance.new("ScrollingFrame", MainFrame)
+scroll.Size = UDim2.new(1, 0, 1, 0); scroll.BackgroundTransparency = 1; scroll.CanvasSize = UDim2.new(0, 0, 0, 450); scroll.ScrollBarThickness = 4
+local layout = Instance.new("UIListLayout", scroll); layout.Padding = UDim.new(0, 5); layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local function createBtn(txt, color, parent)
+    local b = Instance.new("TextButton", parent or scroll)
+    b.Size = UDim2.new(0, 180, 0, 30); b.BackgroundColor3 = color or Color3.fromRGB(50, 50, 50); b.TextColor3 = Color3.new(1, 1, 1); b.Font = Enum.Font.SourceSansBold; b.Text = txt; b.TextSize = 14
+    return b
+end
+
+-- --- Ã‰TATS ---
+local active = true
+local espActive, hbActive, noclip, godMode, antiAfk, infJ, invisible = false, false, false, false, false, false, false
+local walkSpeed, hbSize = 16, 12
+
+-- --- BOUTONS ---
+local afkBtn = createBtn("ANTI-AFK : OFF")
+local espBtn = createBtn("ESP (TRACER/NAME) : OFF")
+local invBtn = createBtn("INVISIBLE : OFF")
+local sIn = Instance.new("TextBox", scroll); sIn.Size = UDim2.new(0, 180, 0, 30); sIn.BackgroundColor3 = Color3.fromRGB(40,40,40); sIn.TextColor3 = Color3.new(1,1,1); sIn.PlaceholderText = "Vitesse Boost (16)"
+local hbBtn = createBtn("HITBOX : OFF")
+local hbIn = Instance.new("TextBox", scroll); hbIn.Size = UDim2.new(0, 180, 0, 30); hbIn.BackgroundColor3 = Color3.fromRGB(40,40,40); hbIn.TextColor3 = Color3.new(1,1,1); hbIn.PlaceholderText = "Taille HB (12)"
+local ncBtn = createBtn("NOCLIP : OFF")
+local ijBtn = createBtn("INF JUMP : OFF")
+local godBtn = createBtn("GOD MODE : OFF")
+local clickTpBtn = createBtn("GET CLICK TP TOOL", Color3.fromRGB(0, 80, 150))
+local tpPlayerBtn = createBtn("TP TO PLAYER MENU", Color3.fromRGB(80, 0, 150))
+local killBtn = createBtn("KILL SCRIPT", Color3.fromRGB(150, 0, 0))
+
+-- --- LOGIQUE BOUTONS ---
+clickTpBtn.MouseButton1Click:Connect(function()
+    local tool = Instance.new("Tool"); tool.Name = "Click TP"; tool.RequiresHandle = false; tool.Parent = player.Backpack
+    tool.Activated:Connect(function() if player.Character and mouse.Hit then player.Character:MoveTo(mouse.Hit.p) end end)
+end)
+
+tpPlayerBtn.MouseButton1Click:Connect(function() TPFrame.Visible = not TPFrame.Visible end)
+
+local TPScroll = Instance.new("ScrollingFrame", TPFrame); TPScroll.Size = UDim2.new(1, 0, 1, 0); TPScroll.BackgroundTransparency = 1; TPScroll.CanvasSize = UDim2.new(0, 0, 0, 600)
+local TPLayout = Instance.new("UIListLayout", TPScroll); TPLayout.Padding = UDim.new(0, 2)
+
+local function updateTPList()
+    for _, v in pairs(TPScroll:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= player then
+            local pBtn = createBtn(p.DisplayName, Color3.fromRGB(40, 40, 40), TPScroll)
+            pBtn.Size = UDim2.new(1, 0, 0, 30); pBtn.MouseButton1Click:Connect(function()
+                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and player.Character then 
+                    player.Character:MoveTo(p.Character.HumanoidRootPart.Position) 
+                end
+            end)
+        end
+    end
+end
+Players.PlayerAdded:Connect(updateTPList); Players.PlayerRemoving:Connect(updateTPList); updateTPList()
+
+espBtn.MouseButton1Click:Connect(function() espActive = not espActive; espBtn.Text = "ESP : "..(espActive and "ON" or "OFF"); espBtn.BackgroundColor3 = espActive and Color3.fromRGB(0,150,0) or Color3.fromRGB(50,50,50) end)
+hbBtn.MouseButton1Click:Connect(function() hbActive = not hbActive; hbBtn.Text = "HITBOX : "..(hbActive and "ON" or "OFF"); hbBtn.BackgroundColor3 = hbActive and Color3.fromRGB(0,150,0) or Color3.fromRGB(50,50,50) end)
+afkBtn.MouseButton1Click:Connect(function() antiAfk = not antiAfk; afkBtn.Text = "ANTI-AFK : "..(antiAfk and "ON" or "OFF"); afkBtn.BackgroundColor3 = antiAfk and Color3.fromRGB(0,150,0) or Color3.fromRGB(50,50,50) end)
+invBtn.MouseButton1Click:Connect(function() invisible = not invisible; invBtn.Text = "INVISIBLE : "..(invisible and "ON" or "OFF"); invBtn.BackgroundColor3 = invisible and Color3.fromRGB(0,150,0) or Color3.fromRGB(50,50,50) end)
+ncBtn.MouseButton1Click:Connect(function() noclip = not noclip; ncBtn.Text = "NOCLIP : "..(noclip and "ON" or "OFF"); ncBtn.BackgroundColor3 = noclip and Color3.fromRGB(0,150,0) or Color3.fromRGB(50,50,50) end)
+ijBtn.MouseButton1Click:Connect(function() infJ = not infJ; ijBtn.Text = "INF JUMP : "..(infJ and "ON" or "OFF"); ijBtn.BackgroundColor3 = infJ and Color3.fromRGB(0,150,0) or Color3.fromRGB(50,50,50) end)
+godBtn.MouseButton1Click:Connect(function() godMode = not godMode; godBtn.Text = "GOD : "..(godMode and "ON" or "OFF"); godBtn.BackgroundColor3 = godMode and Color3.fromRGB(0,150,0) or Color3.fromRGB(50,50,50) end)
+sIn.FocusLost:Connect(function() walkSpeed = tonumber(sIn.Text) or 16 end)
+hbIn.FocusLost:Connect(function() hbSize = tonumber(hbIn.Text) or 12 end)
+
+-- --- BOUCLE DE RENDU PRINCIPALE ---
+local renderConn = RunService.RenderStepped:Connect(function()
+    if not active then return end
+    local char = player.Character
+    if char and char:FindFirstChild("Humanoid") and char:FindFirstChild("HumanoidRootPart") then
+        
+        -- FIX SPEED BOOST (CFrame Velocity Bypass)
+        if walkSpeed > 16 and char.Humanoid.MoveDirection.Magnitude > 0 then
+            local speedMultiplier = (walkSpeed - 16) / 60
+            char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame + (char.Humanoid.MoveDirection * speedMultiplier)
+        end
+
+        -- GOD MODE (Bypass local)
+        if godMode then 
+            char.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+            if char.Humanoid.Health < 15 then
+                char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame + Vector3.new(0, 50, 0) -- Sauvetage anti-mort
+                char.Humanoid.Health = 100
+            end
+        end
+        
+        -- INVISIBLE
+        for _, v in pairs(char:GetChildren()) do 
+            if v:IsA("BasePart") then 
+                v.Transparency = invisible and 1 or (v.Name == "HumanoidRootPart" and 1 or 0) 
+            end 
+        end
+        
+        -- GESTION ESP & HITBOX SUR LES AUTRES JOUEURS
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= player and p.Character then
+                local tHrp = p.Character:FindFirstChild("HumanoidRootPart")
+                local head = p.Character:FindFirstChild("Head")
+                if tHrp and head then
+                    -- ESP SYSTEM
+                    if espActive then
+                        if not p.Character:FindFirstChild("ESPH") then
+                            local highlight = Instance.new("Highlight", p.Character)
+                            highlight.Name = "ESPH"
+                            highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                            
+                            local b = Instance.new("BillboardGui", head); b.Name = "ESPT"; b.AlwaysOnTop = true; b.Size = UDim2.new(0,80,0,20); b.ExtentsOffset = Vector3.new(0,3,0)
+                            local l = Instance.new("TextLabel", b); l.Text = p.DisplayName; l.Size = UDim2.new(1,0,1,0); l.BackgroundTransparency = 1; l.TextColor3 = Color3.new(1,1,1); l.Font = Enum.Font.SourceSansBold; l.TextSize = 12
+                            
+                            local a0 = Instance.new("Attachment", char.HumanoidRootPart); a0.Name = "A0_"..p.Name
+                            local a1 = Instance.new("Attachment", tHrp); a1.Name = "A1_"..p.Name
+                            local beam = Instance.new("Beam", char.HumanoidRootPart); beam.Name = "T_"..p.Name; beam.Color = ColorSequence.new(Color3.new(1,0,0)); beam.Width0 = 0.05; beam.Attachment0 = a0; beam.Attachment1 = a1; beam.FaceCamera = true
+                        end
+                    else
+                        if p.Character:FindFirstChild("ESPH") then p.Character.ESPH:Destroy() end
+                        if head:FindFirstChild("ESPT") then head.ESPT:Destroy() end
+                        if char.HumanoidRootPart:FindFirstChild("T_"..p.Name) then char.HumanoidRootPart["T_"..p.Name]:Destroy(); char.HumanoidRootPart["A0_"..p.Name]:Destroy() end
+                    end
+                    
+                    -- HITBOX EXTENDER
+                    if hbActive then
+                        tHrp.Size = Vector3.new(hbSize, hbSize, hbSize)
+                        tHrp.Transparency = 0.6
+                        tHrp.Color = Color3.fromRGB(255, 0, 0)
+                        tHrp.Material = Enum.Material.Neon
+                        tHrp.CanCollide = false
+                    else
+                        tHrp.Size = Vector3.new(2,2,1)
+                        tHrp.Transparency = 1
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- --- BOUCLE PHYSIQUE NOCLIP ---
+local physicsConn = RunService.Stepped:Connect(function() 
+    if noclip and player.Character then 
+        for _, v in pairs(player.Character:GetDescendants()) do 
+            if v:IsA("BasePart") then v.CanCollide = false end 
+        end 
+    end 
+end)
+
+-- --- INF JUMP ---
+local jumpConn = UserInputService.JumpRequest:Connect(function() 
+    if infJ and player.Character and player.Character:FindFirstChild("Humanoid") then 
+        player.Character.Humanoid:ChangeState("Jumping") 
+    end 
+end)
+
+-- --- ANTI-AFK CONTRE LE KICK DISCONNECT ---
+player.Idled:Connect(function()
+    if antiAfk then
+        game:GetService("VirtualUser"):Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        game:GetService("VirtualUser"):Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    end
+end)
+
+openBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible; TPFrame.Visible = false end)
+
+-- --- RETRAIT SÃ‰CURISÃ‰ DU SCRIPT ---
+killBtn.MouseButton1Click:Connect(function() 
+    active = false 
+    renderConn:Disconnect()
+    physicsConn:Disconnect()
+    jumpConn:Disconnect()
+    sg:Destroy() 
+end)
